@@ -1,0 +1,14 @@
+# Ignore HH folder
+HH/
+
+# Ignore .streamlit folder
+.streamlit/
+
+# Ignore .vscode folder
+.vscode/
+
+# Ignore Python bytecode files
+*.pyc
+
+# Ignore IPython notebooks checkpoints
+.ipynb_checkpoints/
