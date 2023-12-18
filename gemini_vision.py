@@ -45,17 +45,6 @@ for pth in img_paths:
     # print(full_pth)
     images_local.append(ImageDocument(image_path=pth))
 print(f"local imgs = {images_local}")
-# cuisine = input("Enter the cuisine:")
-# time = input("Enter time you have to cook the dish")
-# few_shot_prompt = f"""To do: Suggest a recipe which belongs to the {cuisine} cuisine that can be made within {time} with only the ingredients present in the given image. Assume only salt, pepper and oil as extra ingredients.
-#     For example cuisine:indian ingredients:onion, tomato, eggs, rice, milk time:1hr
-#     Good Answer: Egg curry with cooked rice because the dish follows all the constraints
-#     Bad Answer: Egg curry with paratha because ingredients does not have flour
-#     Another example: cuisine:italian ingredients:onion, tomato, eggs, parmesan, pasta, milk, garlic, red chilli peppers time:45mins
-#     Good Answer: Pasta Arrabbiata because the dish follows all the constraints
-#     Bad Answer: Egg curry with paratha because the dish is not from the given cuisine
-#     Return the answer with json format with the following keys: name, ingredients, steps, ingredients identified from the image
-#     """
 complete_response = gemini_pro.complete(
     prompt="Identify the items in the fridge and return it as a list",
     image_documents=images_local,
