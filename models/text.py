@@ -6,21 +6,26 @@ from llama_index.llms import Gemini
 from llama_index.output_parsers import PydanticOutputParser
 from trulens_eval import Feedback, Tru, TruLlama, TruBasicApp, Select, Provider
 from llama_index.llms import CustomLLM
+import time
 
 
-class GeminiTextFeedbackProvider(Provider):
-    # metric A 
-    # TODO: Invert metric
-    def compare_ingredients(self, input, output):
-        output = PydanticOutputParser(Recipe).parse(output)
+# Setting up Feedback provider
+from trulens_eval.feedback.provider.openai import OpenAI as fOpenAI
+from openai import OpenAI
+openai_client = OpenAI()
+fopenai = fOpenAI(client = openai_client)
 
-        input_list = input["ingredients"]
-        output_list = output.ingredients
-        
-        intersection = set(input_list) & set(output_list)
-        differences = len(set(output_list) - intersection)
 
-        return float(differences)
+def compare_ingredients(input, output):
+    output = PydanticOutputParser(Recipe).parse(output)
+
+    input_list = input["ingredients"]
+    output_list = output.ingredients
+    
+    intersection = set(input_list) & set(output_list)
+    differences = len(set(output_list) - intersection) / len(output_list)
+
+    return 1 - float(differences)
 
 class Recipe(BaseModel):
     name: str
@@ -69,15 +74,37 @@ class GeminiTextModel:
     
     
     def run_multiple(self, cases: List[Dict[str, str]]):
-        gemini_provider = GeminiTextFeedbackProvider()
-        f_compare_ingredients = Feedback(gemini_provider.compare_ingredients).on(
+
+        # Feedbacks
+        f_compare_ingredients = Feedback(compare_ingredients).on(
             input=Select.RecordInput, output=Select.RecordOutput
         )
-        gemini_recorder_with_basic_feedback = TruBasicApp(self._run_model, app_id=self.app_id, feedbacks=[f_compare_ingredients])
+
+        def custom_relevance(input, output):
+            input = self.get_full_prompt(input)
+            return fopenai.relevance_with_cot_reasons(input, output)
+        
+        from trulens_eval.feedback import GroundTruthAgreement
+        golden_set = [
+            {"query": "who invented the lightbulb?", "response": "Thomas Edison"},
+            {"query": "¿quien invento la bombilla?", "response": "Thomas Edison"}
+        ]
+        ground_truth_collection = GroundTruthAgreement(golden_set)
+        def custom_agreement_measure(input, output):
+            input = self.get_full_prompt(input)
+            return ground_truth_collection.agreement_measure(input, output)
+
+        fopenai_relevance = Feedback(custom_relevance, name = "Answer Relevance").on(input=Select.RecordInput, output=Select.RecordOutput)
+        fopenai_model_agreement = Feedback(custom_agreement_measure, name = "Agreement measure").on(input=Select.RecordInput, output=Select.RecordOutput)
+
+        gemini_recorder_with_basic_feedback = TruBasicApp(self._run_model, app_id=self.app_id, feedbacks=[f_compare_ingredients, fopenai_relevance, fopenai_model_agreement])
+        
         responses = []
         with gemini_recorder_with_basic_feedback as recording:
             for case in cases:
                 responses.append(gemini_recorder_with_basic_feedback.app(case))
+                time.sleep(60)
+
         return responses
     
     def run_model(self, user_variables: Dict[str, str]) -> Recipe:
