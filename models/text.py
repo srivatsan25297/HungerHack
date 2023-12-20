@@ -15,7 +15,7 @@ from openai import OpenAI
 openai_client = OpenAI()
 fopenai = fOpenAI(client = openai_client)
 
-
+# TODO: Invert high to low
 def compare_ingredients(input, output):
     output = PydanticOutputParser(Recipe).parse(output)
 
@@ -23,9 +23,9 @@ def compare_ingredients(input, output):
     output_list = output.ingredients
     
     intersection = set(input_list) & set(output_list)
-    differences = len(set(output_list) - intersection) / len(output_list)
+    differences = len(set(output_list) - intersection)
 
-    return 1 - float(differences)
+    return float(differences)
 
 class Recipe(BaseModel):
     name: str
@@ -48,10 +48,14 @@ class RecipeWithReference(BaseModel):
     
 
 class GeminiTextModel:
-    def __init__(self, app_id: str, system_prompt: str, output_class = Recipe):
+    def __init__(self, app_id: str, system_prompt: str, output_class = Recipe, temperature = 0.1):
+        print("Model name", app_id)
+        print("OUTPUT CLASS", output_class)
+        print("TEMPERATURE", temperature)
+        
         self.app_id = app_id
         self.system_prompt = system_prompt
-        self.gemini_model = Gemini()
+        self.gemini_model = Gemini(temperature=temperature)
         self.output_class = output_class
 
     def set_model(self, model: CustomLLM):
@@ -92,12 +96,15 @@ class GeminiTextModel:
         ground_truth_collection = GroundTruthAgreement(golden_set)
         def custom_agreement_measure(input, output):
             input = self.get_full_prompt(input)
-            return ground_truth_collection.agreement_measure(input, output)
+            print("Hey I am in Agreement measure")
+            return_value = ground_truth_collection.agreement_measure(input, output)
+            print("Return value", return_value)
+            return return_value
 
         fopenai_relevance = Feedback(custom_relevance, name = "Answer Relevance").on(input=Select.RecordInput, output=Select.RecordOutput)
         fopenai_model_agreement = Feedback(custom_agreement_measure, name = "Agreement measure").on(input=Select.RecordInput, output=Select.RecordOutput)
 
-        gemini_recorder_with_basic_feedback = TruBasicApp(self._run_model, app_id=self.app_id, feedbacks=[f_compare_ingredients, fopenai_relevance, fopenai_model_agreement])
+        gemini_recorder_with_basic_feedback = TruBasicApp(self._run_model, app_id=self.app_id, feedbacks=[f_compare_ingredients, fopenai_model_agreement])
         
         responses = []
         with gemini_recorder_with_basic_feedback as recording:

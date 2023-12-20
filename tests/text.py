@@ -1,5 +1,5 @@
 # MODELS WITH LIMITED PARAMETERS: INGREDIENTS, TIME, CUISINE
-from models.textmodels import get_fewshot_model_all_params_with_reference_v2, get_fewshot_model_limited_params, get_zeroshot_model_limited_params, get_fewshot_model_all_params, get_zeroshot_model_all_params, get_fewshot_model_all_params_with_reference
+from models.textmodels import get_fewshot_model_all_params_with_reference_v2, get_fewshot_model_limited_params, get_zeroshot_model_limited_params, get_fewshot_model_all_params, get_zeroshot_model_all_params, get_fewshot_model_all_params_with_reference, get_fewshot_model_all_params_with_reference_v2_low_temp, get_fewshot_model_all_params_with_reference_v2_high_temp
 
 
 _variable_and_values = {
@@ -114,4 +114,35 @@ def test_few_shot_all_with_reference_v2(suffix = "text", ingredients_list = vari
 
     model.run_multiple(test_cases)
 
+def test_few_shot_all_with_reference_v2_low_temp(suffix = "text", ingredients_list = variable_and_values["ingredients"], cuisine_list = variable_and_values["cuisine"], time_list = variable_and_values["time"], diet_list = variable_and_values["diet"], course_list = variable_and_values["course"]):
+    print("going to create model")
+    print("Suffix", suffix)
+    model = get_fewshot_model_all_params_with_reference_v2_low_temp("few-shot-reference-low-temp" + suffix + "-test")
+    print("created model")
+
+    test_cases = []
+    for time_value in time_list:
+        for cuisine_value in cuisine_list:
+            for ingredients in ingredients_list:
+                for diet_value in diet_list:
+                    for course_value in course_list:
+                        test_cases.append({"ingredients": ingredients, "time": time_value, "cuisine": cuisine_value, "diet": diet_value, "course": course_value})
+
+    model.run_multiple(test_cases)
+
+def test_few_shot_all_with_reference_v2_high_temp(suffix = "text", ingredients_list = variable_and_values["ingredients"], cuisine_list = variable_and_values["cuisine"], time_list = variable_and_values["time"], diet_list = variable_and_values["diet"], course_list = variable_and_values["course"]):
+    print("going to create model")
+    print("Suffix", suffix)
+    model = get_fewshot_model_all_params_with_reference_v2_high_temp("few-shot-reference-low-temp" + suffix + "-test")
+    print("created model")
+
+    test_cases = []
+    for time_value in time_list:
+        for cuisine_value in cuisine_list:
+            for ingredients in ingredients_list:
+                for diet_value in diet_list:
+                    for course_value in course_list:
+                        test_cases.append({"ingredients": ingredients, "time": time_value, "cuisine": cuisine_value, "diet": diet_value, "course": course_value})
+
+    model.run_multiple(test_cases)
 
