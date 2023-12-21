@@ -20,7 +20,7 @@ def test_ingredients_for_santy_fridge():
     for pth in test_img_paths:
         images_local.append(ImageDocument(image_path=pth))
     
-    ingredients = vision_model.run_model(images_local).items
+    ingredients = vision_model.run_model(image_documents = images_local).items
     print("Got ingredients from vision model")
 
     # Run testing against all combinations

@@ -4,7 +4,7 @@ from llama_index.program import MultiModalLLMCompletionProgram
 from llama_index.schema import ImageDocument
 from pydantic import BaseModel
 
-from typing import Dict, List
+from typing import Dict, List, overload
 from llama_index.output_parsers import PydanticOutputParser
 
 class Ingredients(BaseModel):
@@ -17,8 +17,15 @@ class GeminiVisionModel:
         self.app_id = app_id
         self.system_prompt = system_prompt
 
-    # TODO: Add TruLens
-    def run_model(self, image_documents: List[ImageDocument]) -> Ingredients:
+
+    def run_model(self, image_path: str = None, image_paths: List[str] = None, image_documents: List[ImageDocument] = None) -> Ingredients:
+        if image_path:
+            image_documents = [ImageDocument(image_path = image_path)]
+        elif image_paths:
+            image_documents = [ImageDocument(image_path = image_path) for image_path in image_paths]
+        elif image_documents:
+            image_documents = image_documents
+        
         llm_program = MultiModalLLMCompletionProgram.from_defaults(
             output_parser=PydanticOutputParser(Ingredients),
             image_documents=image_documents,
@@ -26,15 +33,6 @@ class GeminiVisionModel:
             multi_modal_llm=self.model,
             verbose=True,
         )
-
+        
         ingredients = llm_program()
         return ingredients
-    
-    # TODO: Add TruLens
-    def run_multiple(self, test_cases: List[Dict[str, str]]):
-        responses = []
-        for test_case in test_cases:
-            responses.append(self.run_model(test_case))
-            print("Done with ", test_case)
-        return responses
-
