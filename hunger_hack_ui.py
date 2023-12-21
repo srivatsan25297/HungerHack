@@ -1,17 +1,34 @@
-import json
-from typing import List
-from pydantic import BaseModel
+# Description: This file contains the streamlit UI code for the HungerHack project
+
+# Imports
 import streamlit as st
 from PIL import Image
 import os
-from models import visionmodels, textmodels
+with st.spinner("Setting up the application... Please wait :)"):
+    from models import visionmodels, textmodels
 
-VISION_MODEL = visionmodels.get_default_model()
-TEXT_MODEL = textmodels.get_default_model()
+#TODO: Setting Globally is okay? I don't evem know anymore lol
+if "vision_model" not in st.session_state:
+    st.session_state["vision_model"] = visionmodels.get_default_model()
+if "text_model" not in st.session_state:
+    st.session_state["text_model"] = textmodels.get_default_model()
+
+VISION_MODEL = st.session_state["vision_model"]
+TEXT_MODEL = st.session_state["text_model"]
+
 
 def delete_image(name):
+    ingredients_in_image = st.session_state['images'][name]['ingredients']
+    for ingredient in ingredients_in_image:
+        ingredient_count = st.session_state['ingredients'][ingredient]['count']
+        if ingredient_count == 1:
+            st.session_state['ingredients'].pop(ingredient)
+        else:
+            st.session_state['ingredients'][ingredient]['count'] -= 1
+
     st.session_state['images'].pop(name)
     st.session_state["file_uploader_key"] += 1
+
     st.rerun()
 
 def setup_file_uploader():
@@ -46,8 +63,13 @@ def setup_file_uploader():
                 ingredients = VISION_MODEL.run_model(image_path = image_path).items
                 images_so_far[image]["ingredients"] = ingredients
                 for ingredient in ingredients:
-                    ingredient_count = st.session_state['ingredients'].get(ingredient, 0)
-                    st.session_state['ingredients'][ingredient] = ingredient_count + 1
+                    if ingredient not in st.session_state['ingredients']:
+                        st.session_state['ingredients'][ingredient] = {}
+                        st.session_state['ingredients'][ingredient]['count'] = 1
+                        st.session_state['ingredients'][ingredient]['selected'] = True
+                    else:
+                        st.session_state['ingredients'][ingredient]['count'] += 1
+                        st.session_state['ingredients'][ingredient]['selected'] = True
             st.rerun()
             
         
@@ -63,11 +85,8 @@ def setup_file_uploader():
                 if st.button("Delete", key="delete_image" + str(index)):
                     delete_image(image)
 
-def toggle_ingredient(index):
-    if index in st.session_state['selected_buttons']:
-        st.session_state['selected_buttons'].remove(index)
-    else:
-        st.session_state['selected_buttons'].append(index)
+def toggle_ingredient(ingredient):
+    st.session_state['ingredients'][ingredient]['selected'] = not st.session_state['ingredients'][ingredient]['selected']
     st.rerun()
 
 def ingredients_container(ingredients):
@@ -78,13 +97,14 @@ def ingredients_container(ingredients):
     for row_start_index in range(0, len(ingredients_list), no_of_buttons_in_a_row):
         for col_index in range(no_of_buttons_in_a_row):
             if row_start_index + col_index < len(ingredients_list):
-                if row_start_index + col_index in st.session_state['selected_buttons']:
+                ingredient = ingredients_list[row_start_index + col_index]
+                selected = ingredients[ingredient]['selected']
+                if selected:
                     type = "primary"
                 else:
                     type = "secondary"
-                # cols[j].button(dummy_data[i+j], key='dynamic_button_' + str(i)+ str(j) + dummy_data[i+j], type=type, on_click=on_click, args=(i+j,))
                 if cols[col_index].button(ingredients_list[row_start_index + col_index], key='dynamic_button_' + str(row_start_index)+ str(col_index) + ingredients_list[row_start_index + col_index], type=type):
-                    toggle_ingredient(row_start_index + col_index)
+                    toggle_ingredient(ingredient)
 
     new_ingredient = ""
     cols = st.columns(2)
@@ -92,17 +112,11 @@ def ingredients_container(ingredients):
         new_ingredient = st.text_input("", label_visibility="collapsed")
     if cols[1].button('Add'):
         if new_ingredient not in ingredients:
-            ingredients[new_ingredient] = 1
+            ingredients[new_ingredient] = {}
+            ingredients[new_ingredient]['count'] = 1
+            ingredients[new_ingredient]['selected'] = True
             st.rerun()
 
-class Recipe(BaseModel):
-    name: str
-    ingredients: List[str]
-    steps: List[str]
-
-    def __str__(self):
-        recipe_json = json.dumps(self.dict(), indent=4)
-        return recipe_json
 
 def setup_form():
     with st.form("params form"):
@@ -124,8 +138,10 @@ def setup_form():
             time_to_cook = st.slider("Time to cook - mins", 0, 120, 30)
         submitted = st.form_submit_button("Generate")
         if submitted:
-            total_ingredients = list(st.session_state['ingredients'].keys())
-            selected_ingredients = [total_ingredients[i] for i in st.session_state['selected_buttons']]
+            selected_ingredients = []
+            for ingredient in st.session_state['ingredients']:
+                if st.session_state['ingredients'][ingredient]['selected']:
+                    selected_ingredients.append(ingredient)
             print("Details: ", cuisine, course, diet, time_to_cook, selected_ingredients)
             with st.spinner("Generating recipe..."):
                 data = {}
@@ -164,7 +180,6 @@ def main():
         st.session_state['images'] = {}
     if 'selected_buttons' not in st.session_state.keys():
         st.session_state['selected_buttons'] = []
-
 
     st.title("HungerHack - Anyone can cook!")
     setup_file_uploader()
