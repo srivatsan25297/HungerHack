@@ -50,16 +50,16 @@ def ingredients_container(dummy_data):
     st.header('Ingredients List')
     no_of_buttons_in_a_row = 6
     cols = st.columns(no_of_buttons_in_a_row)
-    for i in range(0, len(dummy_data), no_of_buttons_in_a_row):
-        for j in range(no_of_buttons_in_a_row):
-            if i+j < len(dummy_data):
-                if i+j in st.session_state['selected_buttons']:
+    for row_start_index in range(0, len(dummy_data), no_of_buttons_in_a_row):
+        for col_index in range(no_of_buttons_in_a_row):
+            if row_start_index + col_index < len(dummy_data):
+                if row_start_index + col_index in st.session_state['selected_buttons']:
                     type = "primary"
                 else:
                     type = "secondary"
                 # cols[j].button(dummy_data[i+j], key='dynamic_button_' + str(i)+ str(j) + dummy_data[i+j], type=type, on_click=on_click, args=(i+j,))
-                if cols[j].button(dummy_data[i+j], key='dynamic_button_' + str(i)+ str(j) + dummy_data[i+j], type=type):
-                    toggle_ingredient(i+j)
+                if cols[col_index].button(dummy_data[row_start_index + col_index], key='dynamic_button_' + str(row_start_index)+ str(col_index) + dummy_data[row_start_index + col_index], type=type):
+                    toggle_ingredient(row_start_index + col_index)
 
     new_data = ""
     cols = st.columns(2)
@@ -92,9 +92,16 @@ def setup_form():
             "Meal Type",
             ("Desert", "Main Course", "Appetizer")
             )
-        cuisine = st.text_input("Enter cuisine")
+        columns = st.columns(2)
+        with columns[0]:
+            cuisine = st.text_input("Enter cuisine")
+        with columns[1]:
+            time_to_cook = st.slider("Time to cook - mins", 0, 120, 30)
         submitted = st.form_submit_button("Generate")
         if submitted:
+            total_ingredients = st.session_state['dummy_data']
+            selected_ingredients = [total_ingredients[i] for i in st.session_state['selected_buttons']]
+            print("Details: ", cuisine, meal_type, option, time_to_cook, selected_ingredients)
             st.session_state["cuisine"] = cuisine
             st.session_state["meal_typ"] = meal_type
             st.session_state["option"] = option
