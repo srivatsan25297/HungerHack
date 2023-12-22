@@ -90,8 +90,6 @@ class GeminiTextModel:
         with gemini_recorder_with_basic_feedback as recording:
             for case in cases:
                 responses.append(gemini_recorder_with_basic_feedback.app(case))
-                # Sleep for 40 seconds to avoid OpenAI API rate limit
-                time.sleep(40)
         return responses
     
     def run_model(self, user_variables: Dict[str, str]) -> Recipe:
