@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 from pydantic import BaseModel
 import json
 from llama_index.program import LLMTextCompletionProgram
@@ -6,21 +6,26 @@ from llama_index.llms import Gemini
 from llama_index.output_parsers import PydanticOutputParser
 from trulens_eval import Feedback, Tru, TruLlama, TruBasicApp, Select, Provider
 from llama_index.llms import CustomLLM
+import time
+
+# Setting up Feedback provider
+from trulens_eval.feedback.provider.openai import OpenAI as fOpenAI
+from openai import OpenAI
+openai_client = OpenAI()
+fopenai = fOpenAI(client = openai_client)
 
 
-class GeminiTextFeedbackProvider(Provider):
-    # metric A 
-    # TODO: Invert metric
-    def compare_ingredients(self, input, output):
-        output = PydanticOutputParser(Recipe).parse(output)
 
-        input_list = input["ingredients"]
-        output_list = output.ingredients
-        
-        intersection = set(input_list) & set(output_list)
-        differences = len(set(output_list) - intersection)
+def compare_ingredients(input, output):
+    output = PydanticOutputParser(Recipe).parse(output)
 
-        return float(differences)
+    input_list = input["ingredients"]
+    output_list = output.ingredients
+    
+    intersection = set(input_list) & set(output_list)
+    differences = len(set(output_list) - intersection)
+
+    return float(differences)
 
 class Recipe(BaseModel):
     name: str
@@ -35,7 +40,7 @@ class RecipeWithReference(BaseModel):
     name: str
     ingredients: List[str]
     steps: List[str]
-    reference: str
+    reference: Optional[str]
 
     def __str__(self):
         recipe_json = json.dumps(self.dict(), indent=4)
@@ -43,10 +48,10 @@ class RecipeWithReference(BaseModel):
     
 
 class GeminiTextModel:
-    def __init__(self, app_id: str, system_prompt: str, output_class = Recipe):
+    def __init__(self, app_id: str, system_prompt: str, output_class = Recipe, temperature = 0.1):
         self.app_id = app_id
         self.system_prompt = system_prompt
-        self.gemini_model = Gemini()
+        self.gemini_model = Gemini(temperature = temperature)
         self.output_class = output_class
 
     def set_model(self, model: CustomLLM):
@@ -69,15 +74,24 @@ class GeminiTextModel:
     
     
     def run_multiple(self, cases: List[Dict[str, str]]):
-        gemini_provider = GeminiTextFeedbackProvider()
-        f_compare_ingredients = Feedback(gemini_provider.compare_ingredients).on(
+        f_compare_ingredients = Feedback(compare_ingredients,higher_is_better= False, name = "# missing ingredients").on(
             input=Select.RecordInput, output=Select.RecordOutput
         )
-        gemini_recorder_with_basic_feedback = TruBasicApp(self._run_model, app_id=self.app_id, feedbacks=[f_compare_ingredients])
+
+        def custom_relevance(input, output):
+            input = self.get_full_prompt(input)
+            return fopenai.relevance_with_cot_reasons(input, output)
+
+        
+        fopenai_relevance = Feedback(custom_relevance, name = "Answer Relevance").on(input=Select.RecordInput, output=Select.RecordOutput)
+
+        gemini_recorder_with_basic_feedback = TruBasicApp(self._run_model, app_id=self.app_id, feedbacks=[fopenai_relevance, f_compare_ingredients])
         responses = []
         with gemini_recorder_with_basic_feedback as recording:
             for case in cases:
                 responses.append(gemini_recorder_with_basic_feedback.app(case))
+                # Sleep for 40 seconds to avoid OpenAI API rate limit
+                time.sleep(40)
         return responses
     
     def run_model(self, user_variables: Dict[str, str]) -> Recipe:
