@@ -25,7 +25,7 @@ def compare_ingredients(input, output):
     intersection = set(input_list) & set(output_list)
     differences = len(set(output_list) - intersection)
 
-    return float(differences)
+    return 1 - (float(differences) / len(output_list))
 
 class Recipe(BaseModel):
     name: str
@@ -74,7 +74,7 @@ class GeminiTextModel:
     
     
     def run_multiple(self, cases: List[Dict[str, str]]):
-        f_compare_ingredients = Feedback(compare_ingredients,higher_is_better= False, name = "# missing ingredients").on(
+        f_compare_ingredients = Feedback(compare_ingredients, name = "Ingredient correctness").on(
             input=Select.RecordInput, output=Select.RecordOutput
         )
 

@@ -87,12 +87,25 @@ def setup_file_uploader():
 
 def toggle_ingredient(ingredient):
     st.session_state['ingredients'][ingredient]['selected'] = not st.session_state['ingredients'][ingredient]['selected']
-    st.rerun()
+    # st.rerun()
 
 def ingredients_container(ingredients):
+    # m = st.markdown("""
+    #     <style>
+    #     div.stButton > button:first-child {
+    #         background-color: #0099ff;
+    #         color:#ffffff;
+    #     }
+    #     div.stButton > button:hover {
+    #         background-color: #00ff00;
+    #         color:#ff0000;
+    #         }
+    #     </style>""", unsafe_allow_html=True)
     st.header('Ingredients List')
     no_of_buttons_in_a_row = 6
     cols = st.columns(no_of_buttons_in_a_row)
+    # if 'button' not in st.session_state:
+    #     st.session_state.button = False
     ingredients_list = list(ingredients.keys())
     for row_start_index in range(0, len(ingredients_list), no_of_buttons_in_a_row):
         for col_index in range(no_of_buttons_in_a_row):
@@ -103,10 +116,14 @@ def ingredients_container(ingredients):
                     type = "primary"
                 else:
                     type = "secondary"
-                if cols[col_index].button(ingredients_list[row_start_index + col_index], key='dynamic_button_' + str(row_start_index)+ str(col_index) + ingredients_list[row_start_index + col_index], type=type):
-                    toggle_ingredient(ingredient)
+                # if 'button' not in cols[col_index].session_state:
+                #     cols[col_index].session_state.button = False
+                cols[col_index].button(ingredients_list[row_start_index + col_index], key='dynamic_button_' + str(row_start_index)+ str(col_index) + ingredients_list[row_start_index + col_index], type=type, on_click=toggle_ingredient, args=[ingredient], use_container_width=True)
+                    # toggle_ingredient(ingredient)
 
     new_ingredient = ""
+
+
     cols = st.columns(2)
     with cols[0]:
         new_ingredient = st.text_input("", label_visibility="collapsed")
@@ -161,7 +178,7 @@ def setup_form():
                     unsafe_allow_html=True)
         
         with st.expander(" ### Video"):
-            st.video("https://www.youtube.com/watch?v=c2E1P_UN58I")
+            st.write("Under construction; please check back later :)")
 
         with st.expander(" ### Ingredients"):
             for ingredient in recipe.ingredients:
@@ -181,7 +198,7 @@ def main():
     if 'selected_buttons' not in st.session_state.keys():
         st.session_state['selected_buttons'] = []
 
-    st.title("HungerHack - Anyone can cook!")
+    st.title("SnapNCook - Anyone can cook!")
     setup_file_uploader()
     ingredients_container(st.session_state["ingredients"])
     setup_form() 

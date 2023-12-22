@@ -46,7 +46,6 @@ def test_few_shot_limited(suffix = "text", ingredients_list = variable_and_value
 
     few_shot_limited_model.run_multiple(test_cases)
 
-
 # ZEROSHOT WITH ALL PARAMETERS: INGREDIENTS, TIME, CUISINE, DIET, COURSE
 def test_zero_shot_all(suffix = "text", ingredients_list = variable_and_values["ingredients"], cuisine_list = variable_and_values["cuisine"], time_list = variable_and_values["time"], diet_list = variable_and_values["diet"], course_list = variable_and_values["course"]):
     print("going to create model")
