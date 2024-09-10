@@ -13,7 +13,7 @@ class Ingredients(BaseModel):
 
 class GeminiVisionModel:
     def __init__(self, app_id: str, system_prompt: str):
-        self.model = GeminiMultiModal(model_name="models/gemini-pro-vision")
+        self.model = GeminiMultiModal(model_name="models/gemini-1.5-flash")
         self.app_id = app_id
         self.system_prompt = system_prompt
 

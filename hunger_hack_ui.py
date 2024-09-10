@@ -2,11 +2,14 @@
 
 # Imports
 import streamlit as st
-from PIL import Image
+import uuid
+from PIL import Image, ImageChops
 import os
+import hashlib
 with st.spinner("Setting up the application... Please wait :)"):
     from models import visionmodels, textmodels
 
+# TODO: Set a logger instead
 #TODO: Setting Globally is okay? I don't evem know anymore lol
 if "vision_model" not in st.session_state:
     st.session_state["vision_model"] = visionmodels.get_default_model()
@@ -43,12 +46,19 @@ def setup_file_uploader():
     uploaded_files = st.file_uploader("Upload an image of your ingredients...", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key=st.session_state["file_uploader_key"])
     if uploaded_files:
         for uploaded_file in uploaded_files:
-            if uploaded_file.name not in images_so_far.keys():
+            # Use hashlib to check for duplicates
+            # Compute hash of this image
+            hash = hashlib.md5(uploaded_file.read()).hexdigest()
+            if hash in images_so_far:
+                print("Image already exists")
+                continue
+            else:
                 image = Image.open(uploaded_file)
-                # TODO: Maybe we can save the image to a temporary directory and then delete it after the session ends?
-                image_path = os.path.join(os.getcwd(), uploaded_file.name)
+                # Use UUID to generate a unique name
+                image_path = os.path.join(os.getcwd(), str(uuid.uuid4()) + "." + uploaded_file.name.split(".")[-1])
                 image.save(image_path)
-                images_so_far[uploaded_file.name] = {"filepath": image_path, "image": image} 
+                images_so_far[hash] = {"filepath": image_path, "image": image}
+                print("Image saved")
     
     images_to_process = []
     for image in images_so_far.keys():
