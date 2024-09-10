@@ -12,3 +12,12 @@ HH/
 
 # Ignore IPython notebooks checkpoints
 .ipynb_checkpoints/
+
+# Ignore images
+*.png
+*.jpg
+*.jpeg
+
+# Ignore venv
+venv/
+.venv/
