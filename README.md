@@ -1,6 +1,7 @@
 # Hunger Hack
 
-Hunger Hack is an MVP application that suggests recipes based on the contents of your fridge. Users can upload photos of their fridge, set some parameters, and receive suggestions on what to cook along with the steps based on their parameters and items.
+Hunger Hack is a web application that suggests recipes based on the contents of your fridge. 
+Users can upload photos of their fridge, set some parameters, and receive suggestions on what to cook along with the steps based on their parameters and items.
 
 ## Project Structure
 
